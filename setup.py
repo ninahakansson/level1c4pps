@@ -39,7 +39,7 @@ except ImportError:
 
 
 NAME = "level1c4pps"
-README = open('README.md', 'r').read()
+README = open('README.rst', 'r').read()
 
 setup(name=NAME,
       # version=version.__version__,
