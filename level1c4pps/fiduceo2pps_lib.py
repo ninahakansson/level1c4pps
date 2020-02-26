@@ -40,14 +40,13 @@ import logging
 
 logger = logging.getLogger('fiduceo2pps')
 
-BANDNAMES = ['1', '2', '3', '3a', '3b', '4', '5']
+BANDNAMES = ['1', '2', '3a', '3b', '4', '5']
 
 REFL_BANDS = ['1', '2', '3a']
 
 PPS_TAGNAMES = {"1": "ch_r06",
                 "2": "ch_r09",
                 "3a": "ch_r16",
-                "3": "ch_tb37",
                 "3b": "ch_tb37",
                 "4": "ch_tb11",
                 "5": "ch_tb12"}
@@ -102,7 +101,6 @@ def set_header_and_band_attrs(scene):
 def remove_some_attrs_and_none(scene):
     """Remove some attributes and replace some None with none."""
     for dataset in scene:
-        print(dataset.name)
         for coord in dataset.coords:
             for attr in MOVE_TO_HEADER_ATTRS:
                 dataset.coords[coord].attrs.pop(attr, None)
