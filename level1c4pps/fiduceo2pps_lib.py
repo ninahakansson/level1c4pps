@@ -95,6 +95,7 @@ def set_header_and_band_attrs(scene):
         if band in REFL_BANDS:
             # For FIDUCEO data sun_earth_distance_correction is applied always!
             scene[band].attrs['sun_earth_distance_correction_applied'] = 'True'
+            scene[band].data *= 100  # Conversion to %
     return nimg
 
 
@@ -135,7 +136,7 @@ def process_one_scene(scene_files, out_path):
     update_angle_attributes(scn_, irch)
 
     # Apply sunz correction
-    apply_sunz_correction(scn_, REFL_BANDS)
+    # apply_sunz_correction(scn_, REFL_BANDS)
 
     remove_some_attrs_and_none(scn_)
     filename = compose_filename(scn_, out_path, instrument='avhrr', band=irch)
