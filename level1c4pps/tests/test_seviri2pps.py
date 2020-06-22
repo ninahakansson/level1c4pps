@@ -431,9 +431,51 @@ class TestSeviri2PPS(unittest.TestCase):
         np.testing.assert_array_equal(scene['satellite_latitude'], [20])
         np.testing.assert_array_equal(scene['satellite_altitude'], [30])
 
+    def test_add_proj_satpos_api2(self):
+        """Test adding projection and satellite position."""
+        ir_108 = mock.MagicMock(attrs={
+            'orbital_parameters': {'projection_longitude': 'lon0',
+                                   'projection_latitude': 'lat0',
+                                   'projection_altitude': 'h',
+                                   'satellite_actual_longitude': 10,
+                                   'satellite_actual_latitude': 20,
+                                   'satellite_actual_altitude': 30},
+            'georef_offset_corrected': True
+        })
+
+        scene = Scene()
+        scene.attrs = {'area': mock.MagicMock(
+            proj_dict={'a': 1},
+            crs=mock.MagicMock(ellipsoid=mock.MagicMock(semi_minor_metre=2,
+                                                        semi_major_metre=1)),
+            area_extent=[1, 2, 3, 4])}
+        scene['IR_108'] = ir_108
+
+        # Add projection and satellite position
+        seviri2pps.add_proj_satpos(scene)
+
+        # Test global attributes
+        scene.attrs.pop('area', None)
+        attrs_exp = {'projection': 'geos',
+                     'projection_semi_major_axis': 1,
+                     'projection_semi_minor_axis': 2,
+                     'projection_longitude': 'lon0',
+                     'projection_latitude': 'lat0',
+                     'projection_altitude': 'h'}
+        self.assertDictEqual(scene.attrs, attrs_exp)
+
+        # Test variables
+        np.testing.assert_array_equal(scene['projection_area_extent'],
+                                      [[1, 2, 3, 4]])
+        np.testing.assert_array_equal(scene['georef_offset_corrected'], [1])
+        np.testing.assert_array_equal(scene['satellite_longitude'], [10])
+        np.testing.assert_array_equal(scene['satellite_latitude'], [20])
+        np.testing.assert_array_equal(scene['satellite_altitude'], [30])
 
 
 class TestCalibration(unittest.TestCase):
+    """Test get calibration."""
+
     def test_get_calibration_for_date(self):
         """Test MODIS-intercalibrated gain and offset for specific date."""
         coefs = calib.get_calibration_for_date(
