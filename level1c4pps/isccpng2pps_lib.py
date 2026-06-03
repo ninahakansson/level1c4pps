@@ -329,7 +329,7 @@ def process_one_scene(scene_files, out_path,
     homogenize(scene)
     apply_sunz_correction(scene, refl_bands)
     filename = compose_filename(scene, out_path, instrument='seviri', band=scene["pixel_time"])
-    header_attrs = get_header_attrs(scene, band=ir_channel_obj, sensor='seviri')
+    header_attrs = get_header_attrs(scene, band=scene["pixel_time"], sensor='seviri')
     save_data(scene, filename, header_attrs, engine)
     log_time(filename, tic)
     return filename
