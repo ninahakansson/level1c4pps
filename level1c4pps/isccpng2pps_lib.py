@@ -325,7 +325,8 @@ def process_one_scene(scene_files, out_path,
     adjust_lons_to_valid_range(scene)
     convert_angles(scene, delete_azimuth=True)
     update_angle_attributes(scene, ir_channel_obj)
-    recalibrate_meteosat(scene)
+    if not is_eum:
+        recalibrate_meteosat(scene)
     homogenize(scene)
     apply_sunz_correction(scene, refl_bands)
     filename = compose_filename(scene, out_path, instrument='seviri', band=scene["pixel_time"])
