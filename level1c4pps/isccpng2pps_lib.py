@@ -310,6 +310,7 @@ def check_if_eum_format(scene_files):
 
 def process_one_scene(scene_files, out_path,
                       engine='h5netcdf',
+                      use_solar_angles_from_file=False,
                       orbit_n=0):
     """Make level 1c files in PPS-format."""
     tic = time.time()
@@ -321,7 +322,8 @@ def process_one_scene(scene_files, out_path,
     get_wmo_id_from_sensor_flag(scene)
     fix_pixel_time(scene, is_eum)
     update_lat_lon_attrs(scene)
-    update_solar_angles(scene)
+    if not use_solar_angles_from_file:
+        update_solar_angles(scene)
     adjust_lons_to_valid_range(scene)
     convert_angles(scene, delete_azimuth=True)
     update_angle_attributes(scene, ir_channel_obj)
