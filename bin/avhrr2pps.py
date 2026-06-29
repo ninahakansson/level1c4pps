@@ -39,6 +39,8 @@ if __name__ == "__main__":
     parser.add_argument('-on', '--orbit_number', type=int, nargs='?',
                         required=False, default=0,
                         help="Orbit number (default is 00000).")
+    parser.add_argument('--split_scene', action='store_true',
+                        help="Split scenes to 5000 lines per file.")
     options = parser.parse_args()
     process_one_scene(options.files, options.out_dir, engine=options.nc_engine,
-                      orbit_n=options.orbit_number)
+                      orbit_n=options.orbit_number, split_scene=options.split_scene)

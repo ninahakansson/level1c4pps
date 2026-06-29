@@ -22,6 +22,7 @@
 import logging
 import time
 
+import numpy as np
 from satpy.scene import Scene
 
 from level1c4pps import (apply_sunz_correction, check_file_exists,
@@ -101,8 +102,47 @@ def load_data(scene_files):
     scene.load(bands_to_load)
     return scene
 
+def set_exact_time_and_cat(scene, start_line, end_line, time_per_line):
+    """Crop datasets and update start_time end_time objects."""
+    bands_to_crop = band_names + GEOLOCATION_NAMES_EPS
+    start_time = time_per_line[start_line]
+    end_time = time_per_line[end_line]
+    scene.attrs["start_time"] = start_time
+    scene.attrs["end_time"] = end_time
+    for ds in bands_to_crop:
+        if ds in scene and "y" in scene[ds].dims:
+            scene[ds] = scene[ds].isel(y=slice(start_line, end_line + 1))
+            #try:
+                # Update scene attributes to get the filenames right
+            scene[ds].attrs["start_time"] = start_time
+            scene[ds].attrs["end_time"] = end_time
+            #except TypeError:
+            #    pass
 
-def process_one_scene(scene_files, out_path, engine='h5netcdf', orbit_n=0):
+def get_time_per_line(scene):
+    """Get scan time per line."""
+    n_lines = scene[ONE_IR_CHANNEL].shape[0]
+    time_delta = (scene[ONE_IR_CHANNEL].attrs["end_time"] - scene[ONE_IR_CHANNEL].attrs["start_time"])
+    time_per_line = scene[ONE_IR_CHANNEL].attrs["start_time"] + np.arange(0, n_lines) / (n_lines -1) * time_delta
+    return time_per_line
+
+def split_scene_in_overlapping_parts(scene, length=5000, split_scene=False):
+    """Split scenes in parts."""
+    n_lines = scene[ONE_IR_CHANNEL].shape[0]
+    start_index = [ind for ind in range(0,36720, length)]
+    end_index = [ind + 200 for ind in start_index[1:]]
+    end_index.append(n_lines - 1)
+    time_per_line = get_time_per_line(scene)
+    if split_scene:
+        return_array = []
+        for start_i, end_i in zip(start_index, end_index):
+            scene_part = scene.copy()
+            set_exact_time_and_cat(scene_part, start_i, end_i, time_per_line)
+            return_array.append(scene_part.copy()) 
+        return return_array
+    return [scene]
+
+def process_one_scene(scene_files, out_path, engine='h5netcdf', split_scene=False, orbit_n=0):
     """Make level 1c files in PPS-format."""
     tic = time.time()
     check_file_exists(scene_files)
@@ -110,13 +150,16 @@ def process_one_scene(scene_files, out_path, engine='h5netcdf', orbit_n=0):
     ir_channel_obj = scene[ONE_IR_CHANNEL]
     # Check if we have old hrpt format with data only every 20th line
     check_broken_data(scene)
-    set_header_and_band_attrs(scene, orbit_n=orbit_n)
-    rename_latitude_longitude(scene)
-    convert_angles(scene, delete_azimuth=True)
-    update_angle_attributes(scene, ir_channel_obj)
-    apply_sunz_correction(scene, refl_bands)
-    header_attrs = get_header_attrs(scene, band=ir_channel_obj, sensor='avhrr')
-    filename = compose_filename(scene, out_path, instrument='avhrr', band=ir_channel_obj)
-    save_data(scene, filename, header_attrs, engine)
-    log_time(filename, tic)
+    scene_list = split_scene_in_overlapping_parts(scene, split_scene=split_scene)
+    for scene in scene_list:
+        ir_channel_obj = scene[ONE_IR_CHANNEL]
+        set_header_and_band_attrs(scene, orbit_n=orbit_n)
+        rename_latitude_longitude(scene)
+        convert_angles(scene, delete_azimuth=True)
+        update_angle_attributes(scene, ir_channel_obj)
+        apply_sunz_correction(scene, refl_bands)
+        header_attrs = get_header_attrs(scene, band=ir_channel_obj, sensor='avhrr')
+        filename = compose_filename(scene, out_path, instrument='avhrr', band=ir_channel_obj)
+        save_data(scene, filename, header_attrs, engine)
+        log_time(filename, tic)
     return filename
