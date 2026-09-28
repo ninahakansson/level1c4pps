@@ -330,7 +330,8 @@ def process_one_scene(scene_files, out_path,
     if not is_eum:
         recalibrate_meteosat(scene)
     homogenize(scene)
-    apply_sunz_correction(scene, refl_bands)
+    if not is_eum:
+         apply_sunz_correction(scene, refl_bands)
     filename = compose_filename(scene, out_path, instrument='seviri', band=scene["pixel_time"])
     header_attrs = get_header_attrs(scene, band=scene["pixel_time"], sensor='seviri')
     save_data(scene, filename, header_attrs, engine)
