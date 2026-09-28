@@ -174,7 +174,7 @@ sensor_flag_dict = {1: "GOES-16",  # ABI
                     12: "Meteosat-12", }
 
 
-def set_header_and_band_attrs(scene, orbit_n=00000):
+def set_header_and_band_attrs(scene, orbit_n=00000, is_eum=True):
     """Set and delete some attributes."""
     nimg = 0  # name of first dataset is image0
     # Set some header attributes:
@@ -186,7 +186,11 @@ def set_header_and_band_attrs(scene, orbit_n=00000):
     for band in refl_bands:
         if band not in scene:
             continue
-        scene[band].attrs['sun_zenith_angle_correction_applied'] = 'False'
+        if is_eum:
+            scene[band].attrs['sun_zenith_angle_correction_applied'] = 'True'
+        else:
+            scene[band].attrs['sun_zenith_angle_correction_applied'] = 'False'
+
     return nimg
 
 
@@ -318,7 +322,7 @@ def process_one_scene(scene_files, out_path,
     is_eum = check_if_eum_format(scene_files)
     scene = load_data(scene_files, is_eum)
     ir_channel_obj = scene[ONE_IR_CHANNEL]
-    set_header_and_band_attrs(scene, orbit_n=orbit_n)
+    set_header_and_band_attrs(scene, orbit_n=orbit_n, is_eum=is_eum)
     get_wmo_id_from_sensor_flag(scene)
     fix_pixel_time(scene, is_eum)
     update_lat_lon_attrs(scene)
@@ -330,8 +334,7 @@ def process_one_scene(scene_files, out_path,
     if not is_eum:
         recalibrate_meteosat(scene)
     homogenize(scene)
-    if not is_eum:
-         apply_sunz_correction(scene, refl_bands)
+    apply_sunz_correction(scene, refl_bands)
     filename = compose_filename(scene, out_path, instrument='seviri', band=scene["pixel_time"])
     header_attrs = get_header_attrs(scene, band=scene["pixel_time"], sensor='seviri')
     save_data(scene, filename, header_attrs, engine)
